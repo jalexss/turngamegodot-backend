@@ -1,5 +1,6 @@
 const { User, PlayerStats } = require('../models');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 
 exports.register = async (req, res) => {
   try {
@@ -30,7 +31,8 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ 
       where: { 
         [Op.or]: [{ username: identity }, { email: identity }] 
-      } 
+      },
+      include: [PlayerStats] // Traemos las stats de una vez
     });
 
     if (!user || !(await user.validPassword(password))) {
@@ -41,8 +43,13 @@ exports.login = async (req, res) => {
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
+      msg: "Success",
       token,
-      user: { id: user.id, username: user.username }
+      user: { 
+        id: user.id, 
+        username: user.username,
+        stats: user.PlayerStat // Aquí Godot recibe nivel, oro, etc.
+      }
     });
   } catch (error) {
     res.status(500).json({ error: "Error en el servidor" });
