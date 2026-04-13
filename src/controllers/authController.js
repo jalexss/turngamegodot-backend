@@ -1,8 +1,6 @@
-const { User, PlayerStats } = require('../models');
+const { User, PlayerStats, PlayerCharacter, PlayerInventory } = require('../models');
 const jwt = require('jsonwebtoken');
-const { Op } = require('sequelize');
 
-// No necesitas 'require' para fetch en Node v22
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const APP_ID = process.env.STEAM_APP_ID || "480";
 
@@ -33,106 +31,46 @@ exports.steamLogin = async (req, res) => {
 
     const [user, created] = await User.findOrCreate({
       where: { steam_id: steamId },
-      defaults: { username, email: null, password: null }
+      defaults: { username }
     });
 
     if (created) {
       await PlayerStats.create({
         UserId: user.id,
-        level: 1,
-        gold: 100,
-        elo_rating: 1000
+        level: 1
+      });
+      await PlayerInventory.create({
+        UserId: user.id,
+        cristales: 100
+      });
+      await PlayerCharacter.create({
+        UserId: user.id,
+        character_id: 4,
+        is_starter: true
       });
     }
 
     const { accessToken, refreshToken } = generateTokens(user.id);
-    const userWithStats = await User.findByPk(user.id, { include: [PlayerStats] });
+    const userWithData = await User.findByPk(user.id, {
+      include: [PlayerStats, PlayerInventory, PlayerCharacter]
+    });
 
     return res.json({
       msg: created ? "Usuario creado por Steam" : "Login exitoso",
       accessToken,
       refreshToken,
       user: {
-        id: userWithStats.id,
-        steam_id: userWithStats.steam_id,
-        username: userWithStats.username,
-        email: userWithStats.email,
-        stats: userWithStats.PlayerStats
+        id: userWithData.id,
+        steam_id: userWithData.steam_id,
+        username: userWithData.username,
+        stats: userWithData.PlayerStat,
+        inventory: userWithData.PlayerInventory,
+        characters: userWithData.PlayerCharacters
       }
     });
 
   } catch (error) {
     console.error('Steam Login error:', error);
     return res.status(500).json({ error: "Error de conexión con Steam" });
-  }
-};
-
-exports.register = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    // Crear usuario (el hash se hace en el modelo)
-    const user = await User.create({ username, email, password });
-
-    // Crear estadísticas iniciales para el juego automáticamente
-    await PlayerStats.create({ 
-      UserId: user.id,
-      level: 1,
-      gold: 100, // Regalo inicial
-      elo_rating: 1000 
-    });
-
-    // Generar tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
-
-    res.status(201).json({
-      msg: "Usuario creado con éxito",
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email
-      }
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(400).json({ error: "El usuario o email ya existen" });
-  }
-};
-
-exports.login = async (req, res) => {
-  try {
-    const { identity, password } = req.body; // 'identity' puede ser username o email
-
-    // Buscar por cualquiera de los dos
-    const user = await User.findOne({ 
-      where: { 
-        [Op.or]: [{ username: identity }, { email: identity }] 
-      },
-      include: [PlayerStats] // Traemos las stats de una vez
-    });
-
-    if (!user || !(await user.validPassword(password))) {
-      return res.status(401).json({ error: "Credenciales inválidas" });
-    }
-
-    // Generar tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
-
-    res.json({
-      msg: "Success",
-      accessToken,
-      refreshToken,
-      user: { 
-        id: user.id, 
-        username: user.username,
-        email: user.email,
-        stats: user.PlayerStats // Aquí Godot recibe nivel, oro, etc.
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: "Error en el servidor" });
   }
 };

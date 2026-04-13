@@ -6,17 +6,21 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER, 
       defaultValue: 1 
     },
-    gold: { 
+    total_runs_survival: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    best_floor_survival: { 
       type: DataTypes.INTEGER, 
       defaultValue: 0 
     },
-    elo_rating: { 
-      type: DataTypes.INTEGER, 
-      defaultValue: 1000 
+    total_episodes_completed: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
-    max_floor_reached: { 
-      type: DataTypes.INTEGER, 
-      defaultValue: 0 
+    total_time_played_seconds: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     }
   });
 };
