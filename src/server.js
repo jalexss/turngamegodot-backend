@@ -22,8 +22,8 @@ const PORT = process.env.PORT || 3000;
 
 // sequelize.sync() busca tus modelos y crea las tablas si no existen
 sequelize.sync({ 
-  force: false, // 'force: false' evita que se borren los datos cada vez que reinicias
-  alter: true  // 'alter: true' actualiza las tablas para que coincidan con los modelos sin perder datos
+  force: true, // 'force: false' evita que se borren los datos cada vez que reinicias
+  // alter: true  // 'alter: true' actualiza las tablas para que coincidan con los modelos sin perder datos
 }) 
   .then(() => {
     console.log('Base de datos sincronizada');
