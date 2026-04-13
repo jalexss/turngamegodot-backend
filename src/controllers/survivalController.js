@@ -36,7 +36,7 @@ exports.startRun = async (req, res) => {
 
     await t.commit();
 
-    return res.json({
+    return res.status(201).json({
       msg: 'Partida iniciada',
       run: {
         id: run.id,
@@ -67,7 +67,7 @@ exports.saveProgress = async (req, res) => {
       return res.status(404).json({ error: 'No hay partida activa' });
     }
 
-    const { current_floor, current_branch, gold, characters, run_buffs, items } = req.body;
+    const { current_floor, current_branch, gold, characters, run_buffs, items, map_data } = req.body;
 
     const newFloor = current_floor ?? run.current_floor;
     run.current_floor = newFloor;
@@ -76,6 +76,7 @@ exports.saveProgress = async (req, res) => {
     run.characters = characters ?? run.characters;
     run.run_buffs = run_buffs ?? run.run_buffs;
     run.items = items ?? run.items;
+    if (map_data) run.map_data = map_data;
     run.max_floor_reached = Math.max(run.max_floor_reached, newFloor);
 
     await run.save();
@@ -87,7 +88,11 @@ exports.saveProgress = async (req, res) => {
         current_floor: run.current_floor,
         current_branch: run.current_branch,
         max_floor_reached: run.max_floor_reached,
-        gold: run.gold
+        gold: run.gold,
+        seed: run.seed,
+        map_data: run.map_data,
+        characters: run.characters,
+        run_buffs: run.run_buffs
       }
     });
   } catch (error) {
